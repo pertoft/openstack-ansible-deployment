@@ -1,0 +1,49 @@
+ #Verify internet connectivity and dns resolution
+ ansible all -e shell -a "ping -c 1 google.com"
+ 
+ #Verify all lxc bridges are accesible from guests
+ ansible all -e shell -a "ping -c 1 10.0.3.1"
+
+ #Display lxc-containers and their  
+ lxc-ls -f
+ 
+ 
+ for container in $(lxc-ls); do lxc-stop -r --name $container; done
+ 
+ 
+ root@openstack-ansible:/opt/openstack-ansible# ansible galera_container -m shell -a "mysql -h 127.0.0.1 \
+> -e 'show status like \"%wsrep_cluster_%\";'"
+
+
+        ceph_volume:
+          volume_driver: cinder.volume.drivers.rbd.RBDDriver
+          rbd_pool: volumes_hdd
+          rbd_ceph_conf: /etc/ceph/ceph.conf
+          rbd_flatten_volume_from_snapshot: 'false'
+          rbd_max_clone_depth: 5
+          rbd_store_chunk_size: 4
+          rados_connect_timeout: -1
+          volume_backend_name: ceph_volume
+          rbd_user: "{{ cinder_ceph_client }}"
+          rbd_secret_uuid: "{{ cinder_ceph_client_uuid }}"
+
+
+		  Galera
+		  
+ansible galera_container -m shell -a "mysql -h 127.0.0.1 \
+-e 'show status like \"%wsrep_cluster_%\";'"
+		  
+ansible galera_container -m shell -a "cat /var/lib/mysql/grastate.dat"	
+
+
+systemctl set-environment _WSREP_NEW_CLUSTER='--wsrep-new-cluster'
+systemctl start mysql
+systemctl set-environment _WSREP_NEW_CLUSTER=''
+
+ansible galera_container -m shell -a "systemctl set-environment _WSREP_NEW_CLUSTER='--wsrep-new-cluster'" --limit galera_container[0]	  
+ansible galera_container -m shell -a "systemctl start mysql" --limit galera_container[0]	  
+ansible galera_container -m shell -a "systemctl set-environment _WSREP_NEW_CLUSTER=''" --limit galera_container[0]	  
+
+ansible galera_container -m shell -a "/etc/init.d/mysql start --wsrep-new-cluster" --limit galera_container[0]	  
+
+ansible galera_container -m shell -a "systemctl start mysql" --limit galera_container[1:]	  
