@@ -11,8 +11,7 @@
  for container in $(lxc-ls); do lxc-stop -r --name $container; done
  
  
- root@openstack-ansible:/opt/openstack-ansible# ansible galera_container -m shell -a "mysql -h 127.0.0.1 \
-> -e 'show status like \"%wsrep_cluster_%\";'"
+ ansible galera_container -m shell -a "mysql -h 127.0.0.1  -e 'show status like \"%wsrep_cluster_%\";'"
 
 
         ceph_volume:
@@ -45,5 +44,11 @@ ansible galera_container -m shell -a "systemctl start mysql" --limit galera_cont
 ansible galera_container -m shell -a "systemctl set-environment _WSREP_NEW_CLUSTER=''" --limit galera_container[0]	  
 
 ansible galera_container -m shell -a "/etc/init.d/mysql start --wsrep-new-cluster" --limit galera_container[0]	  
+ansible galera_container -m shell -a "systemctl start mysql" --limit galera_container[1:]
 
-ansible galera_container -m shell -a "systemctl start mysql" --limit galera_container[1:]	  
+
+Destroy and rebuild containers:
+openstack-ansible lxc-containers-destroy.yml --limit cloudbc1bl01_cinder_scheduler_container-191f15b0,cloudbc1bl02_cinder_scheduler_container-f2a7c81f,cloudbc2bl01_cinder_scheduler_container-77504a8e,cloudbc1bl01_cinder_api_container-e6bf130b,cloudbc1bl02_cinder_api_container-c568a4e0,cloudbc2bl01_cinder_api_container-00f3635f
+openstack-ansible lxc-containers-create.yml --limit cloudbc1bl01_cinder_scheduler_container-191f15b0,cloudbc1bl02_cinder_scheduler_container-f2a7c81f,cloudbc2bl01_cinder_scheduler_container-77504a8e,cloudbc1bl01_cinder_api_container-e6bf130b,cloudbc1bl02_cinder_api_container-c568a4e0,cloudbc2bl01_cinder_api_container-00f3635f
+openstack-ansible setup-hosts.yml -l cloudbc1bl01,cloudbc1bl02,cloudbc2bl01
+openstack-ansible setup-infrastructure.yml --limit cloudbc1bl01_cinder_scheduler_container-191f15b0,cloudbc1bl02_cinder_scheduler_container-f2a7c81f,cloudbc2bl01_cinder_scheduler_container-77504a8e,cloudbc1bl01_cinder_api_container-e6bf130b,cloudbc1bl02_cinder_api_container-c568a4e0,cloudbc2bl01_cinder_api_container-00f3635f

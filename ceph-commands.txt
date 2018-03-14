@@ -1,0 +1,20 @@
+#Ceph cheatsheet
+
+#Create pool
+ceph osd pool create images 128
+
+#Show pools
+ceph osd pool ls
+
+#Show auth
+ceph auth ls
+
+#Get client auth key
+ceph auth get-key client.cinder
+
+
+#List volumes
+rbd ls volumes
+
+#Det detailts
+rbd info volumes/volume-[UUID]
