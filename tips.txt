@@ -52,3 +52,16 @@ openstack-ansible lxc-containers-destroy.yml --limit cloudbc1bl01_cinder_schedul
 openstack-ansible lxc-containers-create.yml --limit cloudbc1bl01_cinder_scheduler_container-191f15b0,cloudbc1bl02_cinder_scheduler_container-f2a7c81f,cloudbc2bl01_cinder_scheduler_container-77504a8e,cloudbc1bl01_cinder_api_container-e6bf130b,cloudbc1bl02_cinder_api_container-c568a4e0,cloudbc2bl01_cinder_api_container-00f3635f
 openstack-ansible setup-hosts.yml -l cloudbc1bl01,cloudbc1bl02,cloudbc2bl01
 openstack-ansible setup-infrastructure.yml --limit cloudbc1bl01_cinder_scheduler_container-191f15b0,cloudbc1bl02_cinder_scheduler_container-f2a7c81f,cloudbc2bl01_cinder_scheduler_container-77504a8e,cloudbc1bl01_cinder_api_container-e6bf130b,cloudbc1bl02_cinder_api_container-c568a4e0,cloudbc2bl01_cinder_api_container-00f3635f
+
+
+
+### Network
+openstack subnet create \
+--subnet-range 213.83.166.108/30 \
+--gateway 213.83.166.108 \
+--network vlan11-internet \
+--allocation-pool start=213.83.166.109,end=213.83.166.109 \
+--dns-nameserver 212.242.40.3 \
+--dns-nameserver=212.242.40.51 \
+--no-dhcp \
+vlan11_linknet1

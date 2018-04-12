@@ -1,0 +1,55 @@
+openstack network create \
+--share \
+--provider-physical-network br-ext-mgmt \
+--provider-network-type flat \
+flat-ext-management
+
+openstack network create \
+--share \
+--external \
+--provider-physical-network vlan \
+--provider-network-type vlan \
+--provider-segment 24 \
+vlan24-ext-management
+
+
+openstack network create \
+--share \
+--external \
+--provider-physical-network vlan \
+--provider-network-type vlan \
+--provider-segment 20 \
+vlan20-ext-management
+
+
+openstack subnet create \
+--subnet-range 10.207.135.0/24 \
+--gateway 10.207.135.1   \
+--network vlan24-ext-management \
+--allocation-pool start=10.207.135.10,end=10.207.135.254   \
+--dns-nameserver 172.20.0.20 \
+--dns-nameserver=172.20.0.21 \
+ ext-management-subnet1
+
+
+
+
+openstack subnet create \
+--subnet-range 212.88.76.80/28 \
+--gateway 212.88.76.81   \
+--network vlan11-internet \
+--allocation-pool start=212.88.76.82,end=212.88.76.94   \
+--dns-nameserver 212.242.40.3 \
+--dns-nameserver=212.242.40.51 \
+--no-dhcp public_linknet
+
+
+
+openstack subnet create \
+--subnet-range 212.88.89.0/24 \
+--gateway 212.88.89.1   \
+--network vlan11-internet \
+--allocation-pool start=212.88.89.10,end=212.88.89.254    \
+--dns-nameserver 212.242.40.3 \
+--dns-nameserver=212.242.40.51 \
+ public1
