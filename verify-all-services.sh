@@ -1,4 +1,3 @@
-root@cloudbc1bl01-utility-container-ed3d41af:~# cat verify-all.sh
 #!/bin/bash
 set +x
 openstack user list --domain default
