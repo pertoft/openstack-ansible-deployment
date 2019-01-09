@@ -1,0 +1,21 @@
+---
+- hosts: all
+  gather_facts: no
+  become: true
+
+  tasks:
+
+  - name: install ntp
+    apt: name=chronyd state=installed update_cache=yes
+
+  - name: write chrony.conf
+    copy: src=chrony.conf dest=/etc/chrony/chrony.conf mode=644 owner=root group=root
+    notify: restart ntp
+
+  - name: start ntp
+    service: name=ntp state=started
+
+  handlers:
+
+  - name: restart ntp
+    service: name=ntp state=restarted
