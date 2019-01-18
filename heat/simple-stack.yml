@@ -1,0 +1,67 @@
+heat_template_version: 2013-05-23
+
+description: >
+  Simple stack
+parameters:
+  vm_name:
+    type: string
+    label: Name of instance
+    description: Name of instance
+    constraints:
+    - length: {min: 2}
+      description: VM name must be more then 2 characters, letter and numbers only.
+    - allowed_pattern: "[a-zA-Z0-9]+"
+      description: VM name must consist of characters and numbers only.
+  image:
+    type: string
+    label: Server Image
+    description: |
+      Name or UUID of the image to use.
+    default: cirros
+  key_name:
+    type: string
+    description: Name of an existing key pair to use for the instance
+
+  flavor:
+    type: string
+    label: Flavor
+    description: |
+      Name or ID of the flavor to use.
+    default: m1.tiny
+  net:
+    type: string
+    description: |
+      Network UUID
+  volume:
+    type: string
+    description: |
+      ID of volume to attach to the server
+      
+resources:
+  server_vm:
+    type: OS::Nova::Server
+    properties:
+      name : {get_param: vm_name}
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      networks:
+      - network: { get_param: net }
+      user_data:
+        str_replace:
+          template: |
+            #!/bin/bash
+            echo "Hello world from ${vm_name}"
+          params:
+            ${vm_password} : {get_param : vm_name}
+
+  volumeattach1:
+    type: OS::Cinder::VolumeAttachment
+    properties:
+      volume_id: { get_param: volume }
+      instance_uuid: { get_resource: server_vm}
+
+outputs:
+  private_ip:
+    description: Allocated IP
+    value: {get_attr : [server_vm, first_address]}
+
