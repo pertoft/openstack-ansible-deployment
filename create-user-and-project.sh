@@ -1,5 +1,5 @@
 #!/bin/bash
-. openrc
+. /root/openrc
 
 if [ -z "$1" ]; then
   echo "Missing username argument"
