@@ -1,0 +1,113 @@
+
+
+
+openstack service create labs --name environment
+openstack service list
+
+
+openstack endpoint list
+openstack endpoint create --region RegionOne labs admin  http://10.200.0.10:598
+openstack endpoint create --region RegionOne labs public  http://10.200.0.10:598
+openstack endpoint create --region RegionOne labs internal  http://10.200.0.10:598
+openstack endpoint list --service labs
+
+ 
+
+openstack domain list
+
+openstack role list
+openstack role create --domain research scientist
+openstack role add --role-domain research --group researchers --domain research scientist
+openstack role assignment list --domain research --names
+
+openstack role delete --domain research scientist
+
+openstack group list
+openstack group create --domain research researchers
+
+openstack project list --long
+openstack project create --domain research --description "Astronomy Department" astronomy
+
+
+
+openstack user create --email roger@example.com roger
+openstack user list --long
+openstack group add user researchers roger
+openstack group contains user researchers roger
+openstack role add --project astronomy --user roger _memeber_
+openstack role assignment list --project astronomy --names
+
+
+openstack image create --file /root/files/xenial-server-cloudimg-amd64-disk1.img --private --project bio-chem --disk-format qcow2 --container-format bare ubuntu
+openstack image list
+openstack image save --file /root/oldimage.img cirros
+openstack image show ubuntu
+openstack image set --min-ram 512 ubuntu
+
+
+openstack flavor list
+openstack flavor create --ram 512 --disk 2 --vcpus 1 --id 15 m1.data 
+
+
+openstack server list
+openstack server list --project biology
+openstack server suspend server1
+
+openstack server backup create --name server1_backup server1 
+openstack image list
+ 
+ 
+openstack keypair list
+openstack keypair create
+
+
+openstack security group create access
+openstack security group rule create --remote-ip 0.0.0.0/0 --dst-port 22 --protocol tcp access
+openstack security group rule list access
+
+ 
+openstack server create --flavor m1.data --image cirros --network private --security-group isotope
+openstack server add security group isotope access
+ 
+openstack server show isotope
+ 
+openstack floating ip create public
+openstack server add fixed ip isotope public
+openstack server show isotope
+
+openstack quota set --volumes 20 --cores 50 bio-chem
+
+openstack network create --project biology bio-net
+openstack subnet create --project biology --subnet-range 10.10.0.0/24 --allocation-pool start=10.10.0.50,end=10.10.0.100 --dns-nameserver 8.8.8.8 --network bio-net --gateway 10.10.0.1 bio-net-subnet
+openstack router add subnet bio-rtr bio-net-subnet
+
+openstack port list --router bio-rtr
+openstack router remove subnet bio-rtr bio-net-subnet
+
+openstack router add subnet bio-rtr bio-net-subnet
+openstack router set --external-gateway public bio-rtr
+
+
+swift post recordsheets
+swift stat recordsheets
+swift upload --object-name data recordsheets data.txt
+swift list recordsheets
+swift download -o records_copy.txt recordsheets data
+swift post recordsheets -r "physics:*"
+swift post recordsheets -w "biology:jen"
+date --date=2019-12-31 +%s
+swift post recordsheets data -H "X-Delete-After:1577750400"
+
+openstack volume create --size 2 volume2
+openstack server add volume isotope volume2
+openstack volume snapshot create --volume volume1 vol1_snap
+
+openstack stack create --parameter vm_name=science --parameter image=cirros --parameter flavor=m1.tiny --parameter net=public --parameter volume=77947c2b-8d81-46e1-9726-221b2cf2c7e5 -t files/test-stack.yml science-stack
+openstack stack list
+openstack stack show science-stack
+openstack stack output list science-stack
+openstack stack output show science-stack private_ip
+ 
+cd /var/log
+grep -lr 6f48c738-bfbf-41d6-91f4-f1bed6b3b455 *
+
