@@ -1,0 +1,28 @@
+
+This guide shows how to get autocompletion in openstack on Ubuntu 16.04
+
+1. Run this command to generate openstack bash completion:
+
+openstack complete | sudo tee /etc/bash_completion.d/osc.bash_completion > /dev/null
+
+
+2. Uncomment block in /etc/bash.bashrc:
+...
+...
+
+# enable bash completion in interactive shells
+if ! shopt -oq posix; then
+  if [ -f /usr/share/bash-completion/bash_completion ]; then
+    . /usr/share/bash-completion/bash_completion
+  elif [ -f /etc/bash_completion ]; then
+    . /etc/bash_completion
+  fi
+fi
+
+...
+...
+
+
+3. Logout or run bash
+
+You can now autocomplete openstack user (tab, tab)
