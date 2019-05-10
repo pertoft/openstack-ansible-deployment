@@ -1,0 +1,20 @@
+---
+- hosts: haproxy_all,compute_all
+  become: true
+  tasks:
+#    - lineinfile:
+#       path: /etc/network/interfaces
+#       regexp: 'dns\-nameservers'
+#       state: absent
+
+    - replace:
+       path: /etc/network/interfaces
+       regexp: '(\s+)dns-search(.*)'
+       replace: '\n  dns-search cloudlab.telenor.dk \n  dns-nameservers: 172.20.0.20 172.20.0.21'
+
+
+
+#    - template: 
+#       src: resolv.conf.j2
+#       dest: /etc/resolv.conf
+#       mode: "0644"
