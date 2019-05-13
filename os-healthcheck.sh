@@ -1,4 +1,7 @@
 #!/bin/bash
+
+. /root/openrc
+
 cd /opt/openstack-ansible/playbooks
 
 echo "--------- mySQL Cluster Check ----------------------------------------------------------------------------------------------------"
@@ -10,7 +13,7 @@ ansible rabbitmq -m shell -a "rabbitmqctl cluster_status"
 
 echo "--------- haproxy Check ----------------------------------------------------------------------------------------------------------"
 
-ansible haproxy -m shell -a "echo 'show stat' | socat stdio unix-connect:/var/run/haproxy.stat | grep -i down | grep -v '^#'" :w#| grep -i down
+ansible haproxy -m shell -a "echo 'show stat' | socat stdio unix-connect:/var/run/haproxy.stat | grep -i down | grep -v '^#'" | grep -i down
 
 echo "--------- System and openstack systemd service Check -----------------------------------------------------------------------------"
 ansible infra-all -m shell -a "systemctl list-units --type=service | grep failed"

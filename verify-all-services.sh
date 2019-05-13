@@ -1,4 +1,5 @@
 #!/bin/bash
+. /root/openrc
 set +x
 echo openstack user list --domain default
 openstack user list --domain default
