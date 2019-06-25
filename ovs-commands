@@ -1,0 +1,4 @@
+#Openvswitch
+
+#Packet trace
+ovs-appctl ofproto/trace br-int in_port="tap0xxxx',dl_src=fa:16:aa:bb:ea:ff,nw_dst=10.0.1.1
