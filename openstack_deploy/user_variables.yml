@@ -300,9 +300,9 @@ keystone_sp:
       metadata_file: 'metadata-wayf-idp.xml'
       metadata_reload: 1800
       federated_identities:
-       - domain: Default
-         project: fedproject
-         group: fedgroup
+       - domain: default
+         project: wayf
+         group: wayf
          role: _member_
       protocols:
         - name: saml2
@@ -322,5 +322,6 @@ keystone_sp:
         - id: openstack_user
           name: eduPersonPrincipalName
           nameFormat: urn:oasis:names:tc:SAML:2.0:attrname-format:basic
+
 
 
