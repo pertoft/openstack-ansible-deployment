@@ -1,0 +1,85 @@
+---
+# Bulk upload images to Glance
+# 2020-11-11 Per Abildgaard Toft <per@minfejl.dk>
+#
+- hosts: localhost
+  become: False
+  gather_facts: False
+  
+  vars:
+   api_upload: False
+   os_endpoint: 'https://strato-new.claaudia.aau.dk'
+   os_username: 'admin'
+   os_password: '842d58e4e66923ac6b763d3341182adafd8d945b08f93d4d0'
+   images:
+      - 'name': "Cirros-0.5.1-x86_64"
+        'url' : "http://download.cirros-cloud.net/0.5.1/cirros-0.5.1-x86_64-disk.img"
+      - 'name': "CentOS 8"
+        'url' : "https://cloud.centos.org/centos/8/x86_64/images/CentOS-8-GenericCloud-8.2.2004-20200611.2.x86_64.qcow2" 
+      - 'name': "Ubuntu 18.04 (Bionic Beaver)"
+        'url' : "https://cloud-images.ubuntu.com/bionic/current/bionic-server-cloudimg-amd64.img" 
+      - 'name': "Ubuntu 20.04 (Focal Fossa)"
+        'url' : "https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img" 
+      - 'name': "FreeBSD 12.1"
+        'url' : "https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4c80864414a441e72dd2/bsd-cloud-image.org/images/freebsd/12.1/freebsd-12.1.qcow2"
+   pre_tasks:
+    - apt: 
+        name: 
+         - qemu-utils
+        update_cache: yes
+        state: present
+    - pip:
+         name: "{{ item }}"
+         executable: pip
+      with_items:
+            - openstacksdk
+            - future
+  tasks:
+    - assert:
+        that:
+          - "lookup('env','OS_PASSWORD')"
+        fail_msg: "Please source your openrc before running this play"
+        
+    - name: Create temp dir
+      file:
+        path: './images/'
+        state: directory
+
+    - name: Download Images
+      get_url:
+         url: "{{ item.url }}"
+         dest:  "./images/{{ item.url.split('/')[-1] | lower }}"
+         mode: '0440'
+      with_items: "{{ images }}"
+   
+    - name: Convert qcow2 images to raw
+      shell: "qemu-img convert -f qcow2 -O raw ./images/{{ item.url.split('/')[-1] | lower }} ./images/{{item.url.split('/')[-1] | regex_replace('.qcow2|.img') | lower }}.raw"
+      with_items: "{{ images }}"
+
+    - name: Upload images to glance (shell)
+      shell: "openstack image create --public  --disk-format raw --file  ./images/{{item.url.split('/')[-1] | regex_replace('.qcow2|.img') | lower }}.raw '{{item.name}}'"
+      with_items: "{{ images }}"
+      tags: upload
+
+    - name: Upload images to glance (API)
+      openstack.cloud.image:
+         auth:
+            auth_url: "{{ os_endpoint }}"
+            username: "{{ os_username }}"
+            password: "{{ os_password }}"
+            project_name: "{{os_project | default('admin') }}"
+            #openstack.cloud.identity_user_domain_name: Default
+            #openstack.cloud.project_domain_name: Default
+         name: "{{ item.name }}"
+         container_format: bare
+         disk_format: raw
+         state: present
+         filename: "./images/{{item.url.split('/')[-1] | regex_replace('.qcow2|.img') | lower }}.raw"
+         #kernel: cirros-vmlinuz
+         #ramdisk: cirros-initrd
+         properties:
+            cpu_arch: x86_64
+            #distro: ubuntu
+      with_items: "{{ images }}"
+      when: api_upload == True
+      tags: upload

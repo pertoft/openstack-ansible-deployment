@@ -1,0 +1,235 @@
+---
+debug: False
+install_method: source
+rabbitmq_monitoring_userid: monitoring
+#proxy_env_url: http://172.21.1.2:8000/
+# no_proxy_env: "localhost,127.0.0.1,{{ internal_lb_vip_address }},{{ external_lb_vip_address }},{% for host in groups['all_containers'] %}{{ hostvars[host]['container_address'] }}{% if not loop.last %},{% endif %}{% endfor %}"
+# global_environment_variables:
+#   HTTP_PROXY: "{{ proxy_env_url }}"
+#   HTTPS_PROXY: "{{ proxy_env_url }}"
+#   NO_PROXY: "{{ no_proxy_env }}"
+#   http_proxy: "{{ proxy_env_url }}"
+#   https_proxy: "{{ proxy_env_url }}"
+#   no_proxy: "{{ no_proxy_env }}"
+
+# deployment_environment_variables:
+#   http_proxy: "{{ proxy_env_url }}"
+#   https_proxy: "{{ proxy_env_url }}"
+#   no_proxy: "localhost,127.0.0.1,{{ internal_lb_vip_address }},{{ external_lb_vip_address }},{% for host in groups['keystone_all'] %}{{ hostvars[host]['container_address'] }}{% if not loop.last %},{% endif %}{% endfor %}"
+haproxy_keepalived_external_vip_cidr: "{{external_lb_vip_address}}/32"
+haproxy_keepalived_internal_vip_cidr: "{{internal_lb_vip_address}}/32"
+haproxy_keepalived_external_interface: br-ext
+haproxy_keepalived_internal_interface: br-mgmt
+
+#Allow GSSAPIAuthentication for kerberos sso
+security_sshd_disallow_gssapi: yes
+
+#Lets encrypt config
+haproxy_ssl_letsencrypt_enable: True
+haproxy_ssl_letsencrypt_install_method: "distro"
+haproxy_ssl_letsencrypt_email: adf@its.aau.dk
+haproxy_interval: 2000
+haproxy_ssl_letsencrypt_setup_extra_params: "--http-01-address {{ ansible_host }} --http-01-port 8888"
+haproxy_extra_services:
+  # an internal only service for acme-challenge whose backend is certbot running on any haproxy instance
+  - service:
+      haproxy_service_name: letsencrypt
+      haproxy_backend_nodes: "{{ groups['haproxy_all'] }}"
+      backend_rise: 1                       #rise quickly to detect certbot running without delay
+      backend_fall: 2
+      haproxy_bind:
+        - 127.0.0.1                         #bind to the localhost as the host internal IP will be used by certbot
+      haproxy_port: 8888
+      haproxy_balance_type: http
+
+
+
+#HAProxy Stats
+haproxy_stats_enabled: True
+haproxy_stats_bind_address: 0.0.0.0
+haproxy_stats_port: 1936
+haproxy_username: admin
+haproxy_stats_password: admin
+haproxy_stats_refresh_interval: 60
+haproxy_keepalived_external_virtual_router_id: 254
+haproxy_keepalived_internal_virtual_router_id: 253
+keepalived_ping_address: "193.0.14.129"
+
+monitor_address_block: "{{ cidr_networks.container }}"
+public_network: "{{ cidr_networks.container }}"
+cluster_network: "{{ cidr_networks.storage }}"
+journal_size: 10240 # size in MB
+openstack_config: true
+cinder_ceph_client: production-cinder
+glance_ceph_client: production-glance
+#manila_ceph_client: production-manila
+#gnocchi_ceph_client: production-gnocchi
+glance_default_store: rbd
+glance_rbd_store_pool: production-images
+glance_rbd_store_chunk_size: 8
+nova_libvirt_images_rbd_pool: production-vms #Ephemerel, config drives etc## Common Ceph Overrides
+
+glance_glance_api_conf_overrides:
+  DEFAULT:
+    image_size_cap: 5497558138880
+    #Support 5 Tb image upload
+
+
+#Ceph
+ceph_mons:
+    - 172.21.0.5
+    - 172.21.0.6
+    - 172.21.0.7
+
+custer: ceph-cluser
+cephx: true
+generate_fsid: false
+fsid: XXXXXXXXXX # Replace with your generated UUID
+ceph_conf_file: |
+  [global]
+  fsid = XXXXXXXXX
+  mon initial members = mon-c2-c-01,mon-c2-d-01,mon-c2-e-01
+  mon_host = {{ ceph_mons|join(',') }}
+
+  public network = 172.21.0.0/22
+  cluster network = 172.21.100.0/24
+  auth_cluster_required = cephx
+  auth_service_required = cephx
+
+cinder_backends:
+  RBD:
+    image_upload_use_cinder_backend: "True"
+    volume_driver: cinder.volume.drivers.rbd.RBDDriver
+    rbd_pool: production-volumes
+    #rbd_ceph_conf: /etc/ceph/ceph.conf
+    rbd_store_chunk_size: 8
+    volume_backend_name: rbddriver
+    rbd_user: "{{ cinder_ceph_client }}"
+    rbd_secret_uuid: "{{ cinder_ceph_client_uuid }}"
+    report_discard_supported: true
+
+
+#Enable password injection in windows image
+horizon_can_set_password: True
+
+# Horizon  & WAYF
+horizon_custom_uploads:
+  # favico:
+  #   dest: img/favicon.ico
+  #   src: /etc/openstack_deploy/img/favicon.ico
+  logo:
+    dest: img/logo-splash.svg
+    src: /etc/openstack_deploy/img/logo.svg
+  logo_splash:
+    dest: img/logo-splash.svg
+    src: /etc/openstack_deploy/img/logo.svg
+
+horizon_endpoint_type: publicURL
+horizon_keystone_endpoint: https://{{external_lb_vip_address}}:5000/v3
+horizon_session_timeout: 86400
+horizon_websso_initial_choice: saml2
+keystone_public_endpoint: https://{{external_lb_vip_address}}:5000
+keystone_service_publicuri_proto: https
+
+#Workaround - must be defined or file is missing
+keystone_sso_callback_file_path: "/etc/openstack_deploy/keystone/sso_callback_template.html"
+
+# Fixme - skal deaktiveres igen
+rabbitmq_ssl_self_signed_regen: true
+
+
+#Need to be set, because ubuntu has dropped images
+lxc_hosts_container_image_download_legacy: true
+
+#Windows AD
+horizon_keystone_multidomain_support: True
+keystone_ldap:
+  ITS:
+      user: '"svc_ad_user@domain"'
+      password: '"{{aau_ldap_password}}"'
+      url: '"ldaps://adforest.example.com:3269/"'
+      #debug_level: 4095
+      use_tls: '"False"'
+      tls_cacertfile: '"/etc/ssl/certs/adldap.srv.aau.dk.pem"'
+      tls_req_cert: '"allow"'
+      suffix: '"dc=domain,dc=dk"'
+      page_size: '"100"'
+      query_scope: '"sub"' # Look in LDAP sub folders
+
+      user_tree_dn: '"OU=People,dc=its,DC=aau,DC=dk"'
+      user_filter:  '"(memberOf=CN=Server-administrators,OU=Manual,OU=Groups,DC=domain,DC=dk)"'
+      user_objectclass: '"person"'
+      user_id_attribute: '"sAMAccountName"'
+      user_name_attribute: '"sAMAccountName"'
+      user_mail_attribute: '"mail"'
+
+      group_objectclass: '"group"'
+      group_tree_dn: '"OU=Manual,OU=Groups,DC=srv,DC=aau,DC=dk"'
+      group_name_attribute: '"cn"'
+      group_filter: '"(CN=Server*)"'
+      group_id_attribute: '"cn"'
+
+      user_enabled_attribute: '"userAccountControl"'
+      user_enabled_mask: '"2"'
+      user_enabled_default: '"512"'
+      user_attribute_ignore: '"password,tenant_id,tenants"'
+
+
+# GPU Support
+nova_pci_passthrough_whitelist: '{"vendor_id": "10de", "product_id": "1eb8"}'
+
+nova_pci_alias:
+  - '{ "vendor_id":"10de", "product_id":"1eb8", "device_type": "type-PF", "name":"t4" }'
+
+nova_scheduler_extra_filters:
+  - PciPassthroughFilter
+
+#Updated with setup-hosts.yml playbook
+openstack_host_ca_certificates:
+    - name: root-ca.crt
+      src: /etc/openstack_deploy/ssl/root-ca.crt
+
+#Workarounds
+keystone_web_server: apache
+
+keystone_sp:
+  cert_duration_years: 5
+  trusted_dashboard_list:
+  - https://{{ external_lb_vip_address }}/auth/websso/
+  trusted_idp_list:
+  - entity_ids:
+    - https://wayf.wayf.dk
+    federated_identities:
+    - domain: default
+      group: wayf
+      project: wayf
+      role: _member_
+    metadata_file: wayf-metadata.xml
+    metadata_reload: 1800
+    metadata_uri: https://metadata.wayf.dk/wayf-metadata.xml
+    name: WAYF
+    domain_id: default
+    protocols:
+    - attributes:
+      - id: openstack_user
+        name: eduPersonPrincipalName
+        nameFormat: urn:oasis:names:tc:SAML:2.0:attrname-format:basic
+      mapping:
+        name: keystone-idp-mapping
+        rules:
+        - local:
+          - user:
+              domain:
+                id: default
+              name: "{0}"
+          - projects:
+            - name: '{0}'
+              roles:
+              - name: _member_
+          remote:
+          - type: openstack_user
+          - any_one_of:
+            - .*@aau.dk
+            regex: true
+            type: openstack_user
+      name: saml2
